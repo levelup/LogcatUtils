@@ -7,6 +7,8 @@ import android.net.Uri;
 
 public class LogCollectorEmail extends LogCollectorFile {
 
+	public static final int RESULT_SHARE = 0x3155;
+	
 	private final String[] mRecipients;
 	private final String mTitle;
 	private final String mDialogTitle;
@@ -19,15 +21,15 @@ public class LogCollectorEmail extends LogCollectorFile {
 		mDialogTitle = dialogTitle;
 		mText = text;
 	}
-
+	
 	@Override
 	public void finishedReadingLogs() {
 		super.finishedReadingLogs();
 
-		if (mLogBuilder!=null) {
+		if (mFileIsCreated) {
 			Intent emailIntent = new Intent(android.content.Intent.ACTION_SEND); 
 			emailIntent.setType("message/rfc822"/*"text/plain"*/);
-			emailIntent.putExtra(android.content.Intent.EXTRA_STREAM, Uri.fromFile(mLogBuilder));
+			emailIntent.putExtra(android.content.Intent.EXTRA_STREAM, Uri.fromFile(getLogFile()));
 			if (mRecipients!=null)
 				emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL, mRecipients);
 			if (mTitle!=null)
@@ -37,7 +39,7 @@ public class LogCollectorEmail extends LogCollectorFile {
 
 			Intent intent = Intent.createChooser(emailIntent, mDialogTitle!=null ? mDialogTitle : mTitle);
 			if (mContext instanceof Activity)
-				((Activity)mContext).startActivityForResult(intent, 0x105);
+				((Activity)mContext).startActivityForResult(intent, RESULT_SHARE);
 			else
 				mContext.startActivity(intent);
 		}

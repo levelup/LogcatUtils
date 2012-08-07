@@ -12,25 +12,35 @@ import android.os.Environment;
 public abstract class LogCollectorFile implements LogUtils.LogHandler {
 	public LogCollectorFile(Context context) {
 		mContext = context;
+		mLogDirectory = new File(Environment.getExternalStorageDirectory(), "Android/data/"+mContext.getPackageName()+"/logs");
+		mLogBuilder = new File(mLogDirectory, "log_" + System.currentTimeMillis() + ".txt");
 	}
 	
 	private static final byte[] CRLN = new byte[]{'\r', '\n'};
 	
 	protected final Context mContext;
-	protected File mLogBuilder;
+	private File mLogBuilder;
 	protected OutputStream mOutLogger;
+	private final File mLogDirectory;
+	protected boolean mFileIsCreated;
+	
+	public File getLogDirectory() {
+		return mLogDirectory;
+	}
 
+	public File getLogFile() {
+		return mLogBuilder;
+	}
+	
 	@Override
 	public void addNewLogLine(String line) {
-		if (mLogBuilder==null) {
-			String tempDir = "Android/data/"+mContext.getPackageName()+"/logs";
-			File dir = new File(Environment.getExternalStorageDirectory(), tempDir);
+		if (!mFileIsCreated) {
 			if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-				if (!dir.exists() || !dir.isDirectory()) {
-					boolean mDirAsserted = dir.mkdirs();
+				if (!mLogDirectory.exists() || !mLogDirectory.isDirectory()) {
+					boolean mDirAsserted = mLogDirectory.mkdirs();
 					//mLogger.w("cache dir=" + dir.getAbsolutePath()+" asserted:"+DirAsserted);
 					if (mDirAsserted) {
-						File noMedia = new File(dir, ".nomedia");
+						File noMedia = new File(mLogDirectory, ".nomedia");
 						try {
 							noMedia.createNewFile();
 						} catch (IOException e) {
@@ -38,10 +48,10 @@ public abstract class LogCollectorFile implements LogUtils.LogHandler {
 					}
 				}
 
-				mLogBuilder = new File(dir, "log_" + System.currentTimeMillis() + ".txt");
 				mOutLogger = null;
 				try {
 					mLogBuilder.createNewFile();
+					mFileIsCreated = true;
 					mOutLogger = new BufferedOutputStream(new FileOutputStream(mLogBuilder));
 				} catch (IOException e) {
 					try {
@@ -50,8 +60,8 @@ public abstract class LogCollectorFile implements LogUtils.LogHandler {
 					} catch (IOException ee) {
 					} finally {
 						mOutLogger = null;
+						mFileIsCreated = false;
 						mLogBuilder.delete();
-						mLogBuilder = null;
 					}
 				}
 			}
@@ -75,5 +85,4 @@ public abstract class LogCollectorFile implements LogUtils.LogHandler {
 			mOutLogger = null;
 		}
 	}
-
 }
