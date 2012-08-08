@@ -15,15 +15,15 @@ public abstract class LogCollectorFile implements LogUtils.LogHandler {
 		mLogDirectory = new File(Environment.getExternalStorageDirectory(), "Android/data/"+mContext.getPackageName()+"/logs");
 		mLogBuilder = new File(mLogDirectory, "log_" + System.currentTimeMillis() + ".txt");
 	}
-	
+
 	private static final byte[] CRLN = new byte[]{'\r', '\n'};
-	
+
 	protected final Context mContext;
 	private File mLogBuilder;
 	protected OutputStream mOutLogger;
 	private final File mLogDirectory;
 	protected boolean mFileIsCreated;
-	
+
 	public File getLogDirectory() {
 		return mLogDirectory;
 	}
@@ -31,7 +31,7 @@ public abstract class LogCollectorFile implements LogUtils.LogHandler {
 	public File getLogFile() {
 		return mLogBuilder;
 	}
-	
+
 	@Override
 	public void addNewLogLine(String line) {
 		if (!mFileIsCreated) {
@@ -53,7 +53,24 @@ public abstract class LogCollectorFile implements LogUtils.LogHandler {
 					mLogBuilder.createNewFile();
 					mFileIsCreated = true;
 					mOutLogger = new BufferedOutputStream(new FileOutputStream(mLogBuilder));
+
+					String manufacturer = "";
+					try {
+						manufacturer = android.os.Build.MANUFACTURER+" ";
+					} catch (NoSuchMethodError e) {
+					} catch (VerifyError e) {
+					}
+
+					final String deviceName = manufacturer + android.os.Build.MODEL + " (" + android.os.Build.DISPLAY + ")";
+					mOutLogger.write(deviceName.getBytes());
+					mOutLogger.write(CRLN);
+
+					final String ApiVersion = "API v" + android.os.Build.VERSION.SDK_INT + " ("+android.os.Build.VERSION.RELEASE+")";
+					mOutLogger.write(ApiVersion.getBytes());
+					mOutLogger.write(CRLN);
+					mOutLogger.write(CRLN);
 				} catch (IOException e) {
+					e.printStackTrace();
 					try {
 						if (mOutLogger != null)
 							mOutLogger.close();
